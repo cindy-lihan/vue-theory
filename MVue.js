@@ -1,6 +1,36 @@
+const compileUtil = {
+  getVal(expr, vm){
+    return expr.split('.').reduce((data,currentValue)=>{
+      return data[currentValue]
+      
+    },vm.$data)
+
+  },
+  text(node, expr, vm){
+    const value = this.getVal(expr,vm);
+    this.updater.textUpdater(node,value);
+
+  },
+  model(node, expr, vm){
+
+  },
+  html(node, expr, vm){
+
+  },
+  on(node, expr, vm, eventName){
+
+  },
+  updater:{
+    textUpdater(node,value){
+      node.text = value
+    }
+  }
+
+}
+
 class Compile{ 
     constructor(el,vm){
-        this.el = this.isEelementNode(el) ? el : document.querySelector(el);
+        this.el = this.isElementNode(el) ? el : document.querySelector(el);
         this.vm = vm;
         // 1.获取文档碎片对象放入内存中减少页面的回流和重绘
         const fragment = this.nodeToFragment(this.el);
@@ -26,16 +56,16 @@ class Compile{
         // 1.获取子节点
         const childNodes = fragment.childNodes;
         [...childNodes].forEach(child => {
-            if(this.isEelementNode(childNodes)){
+            if(this.isElementNode(child)){
                 // 是元素节点
                 // 编译元素节点
                 console.log('元素节点', child)
-                compileElement(node);
+                this.compileElement(child);
             }else{
                 // 是文本节点
                 // 编译文本节点
                 console.log('文本节点', child)
-                compileText(text);
+               this.compileText(child);
 
             }
 
@@ -48,7 +78,10 @@ class Compile{
         [...attributes].forEach(attr =>{
             const {name, value} = attr;
             console.log(attr);
-            if(this.isDirective(name)){ //是一个指令 v-model v-text
+            if(this.isDirective(name)){ //是一个指令 v-model v-text v-html v-on
+              const[,directive] = name.split('-')
+              const [dirName,eventName] = directive.split(':')
+              compileUtil[directive](node,value,this.vm,eventName)
 
             }
 
@@ -59,8 +92,8 @@ class Compile{
 
     }
 
-    isDirective(name){
-
+    isDirective(attrName){
+      return attrName.startWith('v-')
     }
     nodeToFragment(el){
         // 创建文件碎片
@@ -71,7 +104,7 @@ class Compile{
         }
         return fragment;
     }
-    isEelementNode(node){
+    isElementNode(node){
         return node.nodeType === 1;
     }
     
