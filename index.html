@@ -17,7 +17,7 @@
         </ul>
         <h3>{{msg}}</h3>
         <div v-text="msg"></div>
-        <div v-if="show">显示成功</div>
+        <div v-html="htm"></div>
         <input type="text" v-model=“msg>
     </div>   
 </body>
@@ -45,7 +45,7 @@
                 fav: '瑜伽'
             },
             msg: '这是一段信息',
-            show: true
+            htm: '<a>链接</a>'
         }
     })
 </script>

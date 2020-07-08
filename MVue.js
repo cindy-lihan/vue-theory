@@ -2,7 +2,6 @@ const compileUtil = {
   getVal(expr, vm){
     return expr.split('.').reduce((data,currentValue)=>{
       return data[currentValue]
-      
     },vm.$data)
 
   },
@@ -81,6 +80,7 @@ class Compile{
             if(this.isDirective(name)){ //是一个指令 v-model v-text v-html v-on
               const[,directive] = name.split('-')
               const [dirName,eventName] = directive.split(':')
+              console.log( ' compileUtil[directive]',directive)
               compileUtil[directive](node,value,this.vm,eventName)
 
             }
@@ -93,7 +93,7 @@ class Compile{
     }
 
     isDirective(attrName){
-      return attrName.startWith('v-')
+      return attrName.startsWith('v-')
     }
     nodeToFragment(el){
         // 创建文件碎片
@@ -113,7 +113,7 @@ class Compile{
 class MVue{
     constructor(options){
         this.$el = options.el;
-        this.$data = options.$data;
+        this.$data = options.data;
         this.$options = options;
 
         if(this.$el){
