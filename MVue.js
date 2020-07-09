@@ -6,8 +6,13 @@ const compileUtil = {
 
   },
   text(node, expr, vm){
-    const value = this.getVal(expr,vm);
+    let value ;
     //expr 可能是 {{obj.name}}--{{obj.age}} -用正则表达式
+    if(expr.match()){
+
+    }else{
+        this.getVal(expr,vm)
+    }
     //也可能是v-text='obj.name' v-text='msg'
     this.updater.textUpdater(node,value);
 
