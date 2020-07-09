@@ -7,21 +7,40 @@ const compileUtil = {
   },
   text(node, expr, vm){
     const value = this.getVal(expr,vm);
+    //expr 可能是 {{obj.name}}--{{obj.age}} -用正则表达式
+    //也可能是v-text='obj.name' v-text='msg'
     this.updater.textUpdater(node,value);
 
   },
   model(node, expr, vm){
+    const value = this.getVal(expr, vm);
+    this.updater.modelUpdater(node,value);
 
   },
   html(node, expr, vm){
-
+    const value = this.getVal(expr, vm);
+    this.updater.htmlUpdater(node,value);
   },
   on(node, expr, vm, eventName){
+    //获取实践函数
+    let fn = vm.$options.methods && vm.$options.methods[expr]
+    node.addEventListener(eventName,fn.bind(vm),false)
+
 
   },
+  // 绑定属性 简单的属性 已经处理 类名样式的绑定有点复杂 因为对应的值可能是对象 也可能是数组 大家根据个人能力尝试写一下
+  bind(node,expr,vm,attrName){
+    
+   },
   updater:{
     textUpdater(node,value){
       node.text = value
+    },
+    htmlUpdater(node, value){
+      node.html = value
+    },
+    modelUpdater(node, value){
+      node.value = value;
     }
   }
 
@@ -76,13 +95,13 @@ class Compile{
         const attributes = node.attributes;
         [...attributes].forEach(attr =>{
             const {name, value} = attr;
-            console.log(attr);
             if(this.isDirective(name)){ //是一个指令 v-model v-text v-html v-on
               const[,directive] = name.split('-')
               const [dirName,eventName] = directive.split(':')
-              console.log( ' compileUtil[directive]',directive)
               compileUtil[directive](node,value,this.vm,eventName)
-
+            }else if(this.isEventName(name)){
+              let [,eventName] = name.split('@');
+              compileUtil['on'](node, value, this.vm, eventName);
             }
 
         })
@@ -94,6 +113,10 @@ class Compile{
 
     isDirective(attrName){
       return attrName.startsWith('v-')
+    }
+
+    isEventName(attrName){
+      return attrName.startsWith('@')
     }
     nodeToFragment(el){
         // 创建文件碎片
