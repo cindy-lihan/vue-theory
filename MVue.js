@@ -8,10 +8,13 @@ const compileUtil = {
   text(node, expr, vm){
     let value ;
     //expr 可能是 {{obj.name}}--{{obj.age}} -用正则表达式
-    if(expr.match()){
-
-    }else{
-        this.getVal(expr,vm)
+    if(expr.indexOf('{{') !== -1){
+      value = expr.replace(/\{\{(.+?)\}\}/g,(...args)=>{
+        console.log('args',args)
+        return this.getVal(args[1],vm);
+      })
+    }else{ ////也可能是v-text='obj.name' v-text='msg'
+        value = this.getVal(expr,vm)
     }
     //也可能是v-text='obj.name' v-text='msg'
     this.updater.textUpdater(node,value);
@@ -27,11 +30,10 @@ const compileUtil = {
     this.updater.htmlUpdater(node,value);
   },
   on(node, expr, vm, eventName){
+    console.log(node)
     //获取实践函数
     let fn = vm.$options.methods && vm.$options.methods[expr]
     node.addEventListener(eventName,fn.bind(vm),false)
-
-
   },
   // 绑定属性 简单的属性 已经处理 类名样式的绑定有点复杂 因为对应的值可能是对象 也可能是数组 大家根据个人能力尝试写一下
   bind(node,expr,vm,attrName){
@@ -39,7 +41,7 @@ const compileUtil = {
    },
   updater:{
     textUpdater(node,value){
-      node.text = value
+      node.textContent = value
     },
     htmlUpdater(node, value){
       node.html = value
@@ -63,34 +65,31 @@ class Compile{
         this.el.appendChild(fragment);
     }
     /*
-        <h2>{{person.name}} -- {{person.age}}</h2>
         <h3>{{person.fav}}</h3>
-        <ul>
-            <li>1</li>
-            <li>2</li>
-            <li>3</li>
-        </ul>
         <h3>{{msg}}</h3>
         <div v-text="msg"></div>
-        <div v-if="show">显示成功</div>
         <input type="text" v-model=“msg>
     */
     compile(fragment){
         // 1.获取子节点
         const childNodes = fragment.childNodes;
+        // 2.递归循环编译
         [...childNodes].forEach(child => {
             if(this.isElementNode(child)){
                 // 是元素节点
                 // 编译元素节点
-                console.log('元素节点', child)
+                console.log('元素节点', child);
                 this.compileElement(child);
             }else{
                 // 是文本节点
                 // 编译文本节点
-                console.log('文本节点', child)
-               this.compileText(child);
-
+                console.log('文本节点', child);
+                this.compileText(child);
             }
+            // 一定要记得递归遍历
+            if(child.childNodes && child.childNodes.length){
+              this.compile(child);
+          }
 
         });
 
@@ -103,7 +102,7 @@ class Compile{
             if(this.isDirective(name)){ //是一个指令 v-model v-text v-html v-on
               const[,directive] = name.split('-')
               const [dirName,eventName] = directive.split(':')
-              compileUtil[directive](node,value,this.vm,eventName)
+              compileUtil[dirName] && compileUtil[dirName](node, value, this.vm, eventName);
             }else if(this.isEventName(name)){
               let [,eventName] = name.split('@');
               compileUtil['on'](node, value, this.vm, eventName);
@@ -112,7 +111,13 @@ class Compile{
         })
     }
 
-    compileText(text) {
+    compileText(node) {
+      const content = node.textContent;
+      // 匹配{{xxx}}内容
+      if(/\{\{(.+?)\}\}/.test(content)){
+        //处理文本节点
+        compileUtil['text'](node,content,this.vm)
+      }
 
     }
 
@@ -146,6 +151,8 @@ class MVue{
 
         if(this.$el){
             // 1.实现一个数据的观察者
+            // new Observer(this.$data)
+
             // 2.实现一个指令的解析器
             new Compile(this.$el,this);
 

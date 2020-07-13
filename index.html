@@ -23,12 +23,13 @@
         <div v-html='htmlStr'></div>
         <div v-html='obj.fav'></div>
         <input type="text" v-model='msg'>
-        <img v-bind:src="imgSrc" v-bind:alt="altTitle">
+        <!-- <img v-bind:src="imgSrc" v-bind:alt="altTitle"> -->
         <button v-on:click='handlerClick'>按钮1</button>
         <button v-on:click='handlerClick2'>按钮2</button>
         <button @click='handlerClick2'>按钮3</button>
     </div>
-    <script src="./vue.js"></script>
+    <script src="./Observer.js"></script>
+    <script src="./MVue.js"></script>
     <script>
         let vm = new MVue({
             el: '#app',
