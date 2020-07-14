@@ -5,12 +5,22 @@ const compileUtil = {
     },vm.$data)
 
   },
+  //获取新值 对{{a}}--{{b}} 这种格式进行处理
+  getContentVal(expr, vm) {
+    return expr.replace(/\{\{(.+?)\}\}/g, (...args) => {
+        return this.getVal(args[1], vm);
+    })
+  },
   text(node, expr, vm){
     let value ;
     //expr 可能是 {{obj.name}}--{{obj.age}} -用正则表达式
     if(expr.indexOf('{{') !== -1){
       value = expr.replace(/\{\{(.+?)\}\}/g,(...args)=>{
-        console.log('args',args)
+        // text的 Watcher应在此绑定，因为是对插值{{}}进行双向绑定
+        // Watcher的构造函数的 getOldVal()方法需要接受数据或者对象，而{{person.name}}不能接收
+        new Watcher(args[1], vm,()=>{
+        this.updater.textUpdater(node, this.getContentVal(expr, vm));
+    });
         return this.getVal(args[1],vm);
       })
     }else{ ////也可能是v-text='obj.name' v-text='msg'
@@ -22,15 +32,22 @@ const compileUtil = {
   },
   model(node, expr, vm){
     const value = this.getVal(expr, vm);
+    //model对应的watcher
+    new Watcher(expr,vm ,(newVal) => {
+      this.updater.modelUpdater(node,newVal);
+    });
     this.updater.modelUpdater(node,value);
 
   },
   html(node, expr, vm){
     const value = this.getVal(expr, vm);
+     // html对应的 Watcher
+     new Watcher(expr, vm, (newVal)=>{
+      this.updater.htmlUpdater(node, newVal);
+  })
     this.updater.htmlUpdater(node,value);
   },
   on(node, expr, vm, eventName){
-    console.log(node)
     //获取实践函数
     let fn = vm.$options.methods && vm.$options.methods[expr]
     node.addEventListener(eventName,fn.bind(vm),false)
@@ -78,12 +95,10 @@ class Compile{
             if(this.isElementNode(child)){
                 // 是元素节点
                 // 编译元素节点
-                console.log('元素节点', child);
                 this.compileElement(child);
             }else{
                 // 是文本节点
                 // 编译文本节点
-                console.log('文本节点', child);
                 this.compileText(child);
             }
             // 一定要记得递归遍历
@@ -148,15 +163,13 @@ class MVue{
         this.$el = options.el;
         this.$data = options.data;
         this.$options = options;
-
         if(this.$el){
-            // 1.实现一个数据的观察者
-            // new Observer(this.$data)
-
-            // 2.实现一个指令的解析器
+            // 编译模版
             new Compile(this.$el,this);
-
+            // 创建观察者，观察数据
+            new Observer(this.$data);
         }
+        this.$data.obj.age= 30;
     }
 
 }
