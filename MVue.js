@@ -3,7 +3,11 @@ const compileUtil = {
     return expr.split('.').reduce((data,currentValue)=>{
       return data[currentValue]
     },vm.$data)
-
+  },
+  setVal(expr, vm, inputVal){
+    return expr.split('.').reduce((data,currentValue)=>{
+      data[currentValue] = inputVal
+    },vm.$data)
   },
   //获取新值 对{{a}}--{{b}} 这种格式进行处理
   getContentVal(expr, vm) {
@@ -33,11 +37,16 @@ const compileUtil = {
   model(node, expr, vm){
     const value = this.getVal(expr, vm);
     //model对应的watcher
+    // 绑定更新函数 数据=>视图
     new Watcher(expr,vm ,(newVal) => {
       this.updater.modelUpdater(node,newVal);
     });
+    // 视图=》数据
+    node.addEventListener('input', (e)=>{
+      //设置值
+      this.setVal(expr, vm, e.target.value);
+    })
     this.updater.modelUpdater(node,value);
-
   },
   html(node, expr, vm){
     const value = this.getVal(expr, vm);
@@ -164,12 +173,29 @@ class MVue{
         this.$data = options.data;
         this.$options = options;
         if(this.$el){
+           // 创建观察者，观察数据
+           new Observer(this.$data);
             // 编译模版
             new Compile(this.$el,this);
-            // 创建观察者，观察数据
-            new Observer(this.$data);
+          
         }
         this.$data.obj.age= 30;
+        // 代理
+        this.proxyData(this.$data);
+    }
+    //代理 通过this.person获取数据 而不是用this.$data.person
+    proxyData(data){
+      for(const key in data){
+        Object.defineProperties(this.key, {
+          get(){
+            return data[key];
+          },
+          set(newVal){
+            data[key] = newVal;
+          }
+        })
+      }
+
     }
 
 }
